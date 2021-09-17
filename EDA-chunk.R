@@ -28,6 +28,8 @@ df%>%select(reason)%>%distinct()  #3
 
 df%>%select(call_timestamp)%>%summarise(max=max(call_timestamp),min=min(call_timestamp))
 
+df%>%select(call_timestamp)%>%summarise(max=max(call_timestamp),min=min(call_timestamp))
+
 #### Classification tree
 
     #sample<-sample(1:2,size=nrow(df),prob=c(0.98,0.02),replace=TRUE)
