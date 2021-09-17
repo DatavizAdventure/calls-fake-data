@@ -30,16 +30,7 @@ df%>%select(call_timestamp)%>%summarise(max=max(call_timestamp),min=min(call_tim
 
 df%>%select(call_timestamp)%>%summarise(max=max(call_timestamp),min=min(call_timestamp))
 
-#### Classification tree
 
-    #sample<-sample(1:2,size=nrow(df),prob=c(0.98,0.02),replace=TRUE)
-    
-    
-    #data<-df[sample==2,]
-    
-    #tree_model<-rpart(sentiment~call_center+reason+state+city+response_time+call.duration.in.minutes,data=data,method="class")
-    
-    #rpart.plot(tree_model,yesno=2,type=0,extra=0)
 
 
 ggplot(df,aes(sentiment,call.duration.in.minutes))+geom_violin()
