@@ -10,7 +10,7 @@ colnames(df)
 
 str(df)
 
-df%>%select(reason)%>%distinct()  #3
+
 
 df%>%select(city)%>%distinct()  #462
 
@@ -24,19 +24,24 @@ df%>%select(response_time)%>%distinct  #3
 
 df%>%select(sentiment)%>%distinct  #5
 
+df%>%select(reason)%>%distinct()  #3
+
+df%>%select(call_timestamp)%>%summarise(max=max(call_timestamp),min=min(call_timestamp))
 
 #### Classification tree
 
-data=sample(1,700,replace=TRUE)
+    #sample<-sample(1:2,size=nrow(df),prob=c(0.98,0.02),replace=TRUE)
+    
+    
+    #data<-df[sample==2,]
+    
+    #tree_model<-rpart(sentiment~call_center+reason+state+city+response_time+call.duration.in.minutes,data=data,method="class")
+    
+    #rpart.plot(tree_model,yesno=2,type=0,extra=0)
 
 
-df_train <-df[assign==1,]
-dt_test <- df[assign==2,]
+ggplot(df,aes(sentiment,call.duration.in.minutes))+geom_violin()
 
-
-rpart(sentiment~call_center+reason+state+city+response_time+call.duration.in.minutes)
-
-
-
-
+#interesante
+ggplot(df,aes(call.duration.in.minutes))+geom_histogram()+facet_grid(call_center~sentiment)
 
