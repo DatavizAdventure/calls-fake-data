@@ -15,6 +15,7 @@ library(highcharter)
 library(bslib)
 library(thematic)
 library(dplyr)
+
 #shinyWidgetsGallery()
 
 calls <- read.csv("https://query.data.world/s/alswcm6adfxovl2arfijlst6hkhmxn", header=TRUE, stringsAsFactors=FALSE)
@@ -65,10 +66,14 @@ body<-dashboardBody(
             
             fluidRow(
               ### Calls by call center 
-              column(width=12,
-                     box(status="info",solidHeader=TRUE,title="Calls by call center",
-                         highchartOutput("calls_by_call_center"),width=12,height=500)
-              )
+              column(width=8,
+                     box(solidHeader=TRUE,title="Calls by call center",
+                         highchartOutput("calls_by_call_center",height="55vh"),width=12)
+              ),
+              column(width=4,
+                box(solidHeader=TRUE,title="Extra information",
+                  textOutput('text_overview'),width=12)
+                )
             )
             
     ),
@@ -80,45 +85,40 @@ body<-dashboardBody(
     tabItem(tabName="Details",
             fluidRow(
               column(width=6,
-                     box(status="info",solidHeader=TRUE,title="Calls received",
-                         highchartOutput("Calls_received"),width="100%",height="500px")
+                     box(solidHeader=TRUE,title="Calls received",
+                         highchartOutput("Calls_received",height="30vh"),width="100%")
               )
               ,    
               column(width=6,
-                     
-                     box(status="info",solidHeader=TRUE,title="Average calls duration",
-                         highchartOutput("Average_calls_duration"),width="100%",height="500px")
+                     box(solidHeader=TRUE,title="Average calls duration",
+                         highchartOutput("Average_calls_duration",height="30vh"),width="100%")
               )
             )
             
             
             ,
             fluidRow(
-              column(width=6,
-                     box(status="info",solidHeader=TRUE,title="Response",
+              column(width=3,
+                     box(solidHeader=TRUE,title="Response",
                          highchartOutput("response"),width="100%",height="500px")
                      
               ),  
-              column(width=6,
-                     box(status="info",solidHeader=TRUE,title="Reasons",
+              column(width=3,
+                     box(solidHeader=TRUE,title="Reasons",
                          highchartOutput("reasons"),width="100%",height="500px")
-              )
-            ),
-            fluidRow(
-              column(width=6,
-                     box(status="info",solidHeader=TRUE,title="Sentiments",
+              ),
+              column(width=3,
+                     box(solidHeader=TRUE,title="Sentiments",
                          highchartOutput("sentiments"),width="100%",height="500px")
                      
               ),
-              column(width=6,
-                     box(status="info",solidHeader=TRUE,title="Channel",
+              column(width=3,
+                     box(solidHeader=TRUE,title="Channel",
                          highchartOutput("channels"),width="100%",height="500px")
                      
                      
               )
-              
             )
-            
     )
   )
 )
@@ -157,7 +157,23 @@ sidebar<-dashboardSidebar(
 #Header
 
 header<-dashboardHeader(
-  title = "Call Center Report - October 2020",titleWidth  = 350
+  title = "Call Center Report - October 2020",titleWidth  = 350,
+  dropdownMenu(
+    type="messages",
+    messageItem(
+      from="Cesar Goyzueta",
+      message="Check Out my Linkedin",
+      href="http://www.linkedin.com/in/cesargoyzueta/",
+      icon=icon("user-tie")
+    ),
+    messageItem(
+      from="DataVizAdventure",
+      message="Check out my Behance",
+      href="https://www.behance.net/enriquemendoza5",
+      icon=icon("user-tie")
+      
+    )
+  )
 )
 
 
@@ -168,12 +184,21 @@ ui <- dashboardPage(skin="purple",
                     sidebar=sidebar,
                     body=body)
 
+
+
+
+
+
+
+
+
 # Define server logic required to draw a histogram
 server <- function(input, output) {
   #Card call counts
   
   output$value_box_calls_count<- renderValueBox({
-    call_count<-format(calls%>%filter(call_timestamp<=as.Date(input$range[2]) & call_timestamp>=as.Date(input$range[1]))%>%tally(),big.mark=",")
+    call_count<-format(calls%>%filter(call_timestamp<=as.Date(input$range[2]) & call_timestamp>=as.Date(input$range[1]))%>%
+                         filter(call_center==input$Call_center)%>%tally(),big.mark=",")
     
     valueBox(
       value = call_count,
@@ -188,6 +213,7 @@ server <- function(input, output) {
   output$value_box_total_minutes<- renderValueBox({
     
     total_minutes<-format(calls%>%filter(call_timestamp<=as.Date(input$range[2]) & call_timestamp>=as.Date(input$range[1]))%>%
+                            filter(call_center==input$Call_center)%>%
                             summarise(total_minutes=sum(call.duration.in.minutes)), big.mark=",")
     
     valueBox(
@@ -202,8 +228,9 @@ server <- function(input, output) {
   
   
   output$value_box_avg_call_duration<- renderValueBox({
-    avg_calls_duration<-round(calls%>%filter(call_timestamp<=as.Date(input$range[2]) & call_timestamp>=as.Date(input$range[1]))
-                              %>%summarise(avg_calls_duration=mean(call.duration.in.minutes)),2)
+    avg_calls_duration<-round(calls%>%filter(call_timestamp<=as.Date(input$range[2]) & call_timestamp>=as.Date(input$range[1]))%>%
+                              filter(call_center==input$Call_center)%>%
+                                summarise(avg_calls_duration=mean(call.duration.in.minutes)),2)
     
     valueBox(
       value = avg_calls_duration,
@@ -249,8 +276,7 @@ server <- function(input, output) {
           fontSize = "12px",
           color = "#333333"
         )
-      )) %>%  hc_legend(enabled = FALSE)%>% hc_title(
-        text = "Calls by call center", align = "left")
+      )) %>%  hc_legend(enabled = FALSE)
     
   })   
   
@@ -261,7 +287,7 @@ server <- function(input, output) {
     
     
     #Day
-    callsDay<-calls%>%filter(call_center==input$Call_center)%>%
+    callsDay<-calls%>%filter(call_timestamp<=as.Date(input$range[2]) & call_timestamp>=as.Date(input$range[1]))%>%filter(call_center==input$Call_center)%>%
       group_by(call_timestamp)%>%
       tally()
     
@@ -284,7 +310,7 @@ server <- function(input, output) {
           fontSize = "12px",
           color = "#333333"
         ) 
-      ))%>%hc_legend(enabled = FALSE)%>% hc_title(text = "Calls received", align = "left")
+      ))%>%hc_legend(enabled = FALSE)
     
     
     
@@ -297,7 +323,7 @@ server <- function(input, output) {
     
     
     #Day
-    trendAverage<-callsAverage%>%filter(call_center==input$Call_center)%>%
+    trendAverage<-callsAverage%>%filter(call_timestamp<=as.Date(input$range[2]) & call_timestamp>=as.Date(input$range[1]))%>%filter(call_center==input$Call_center)%>%
       group_by(call_timestamp, averageTime)%>%
       tally()%>%
       rename(callsTotalDay = n)
@@ -320,7 +346,7 @@ server <- function(input, output) {
           fontSize = "12px",
           color = "#333333"
         ) 
-      ))%>%hc_legend(enabled = FALSE)%>% hc_title(text = "Average calls duration", align = "left")
+      ))%>%hc_legend(enabled = FALSE)
     
     
   })             
@@ -366,7 +392,7 @@ server <- function(input, output) {
           fontSize = "12px",
           color = "#333333"
         ) 
-      ))%>%  hc_legend(enabled = FALSE)%>% hc_title(text = "Response", align = "left")
+      ))%>%  hc_legend(enabled = FALSE)
     
     
   })             
@@ -409,7 +435,7 @@ server <- function(input, output) {
           fontSize = "12px",
           color = "#333333"
         ) 
-      ))%>%  hc_legend(enabled = FALSE)%>% hc_title(text = "Reasons", align = "left")
+      ))%>%  hc_legend(enabled = FALSE)
     
     
     
@@ -454,7 +480,7 @@ server <- function(input, output) {
           fontSize = "12px",
           color = "#333333"
         ) 
-      ))%>%  hc_legend(enabled = FALSE)%>% hc_title(text = "Sentiment", align = "left")
+      ))%>%  hc_legend(enabled = FALSE)
     
     
     
@@ -498,14 +524,26 @@ server <- function(input, output) {
           fontSize = "12px",
           color = "#333333"
         ) 
-      ))%>%  hc_legend(enabled = FALSE)%>% hc_title(text = "Channel", align = "left")
+      ))%>%  hc_legend(enabled = FALSE)
     
     
     
   })       
   
   
-  
+  output$text_overview <- renderText({
+    "Uniform: These functions provide information about the uniform distribution on the interval from min to max. 
+    dunif gives the density, punif gives the distribution function qunif gives the quantile function and runif generates random deviates.
+    Uniform: These functions provide information about the uniform distribution on the interval from min to max. 
+    dunif gives the density, punif gives the distribution function qunif gives the quantile function and runif generates random deviates.
+    Uniform: These functions provide information about the uniform distribution on the interval from min to max. 
+    dunif gives the density, punif gives the distribution function qunif gives the quantile function and runif generates random deviates.
+    Uniform: These functions provide information about the uniform distribution on the interval from min to max. 
+    dunif gives the density, punif gives the distribution function qunif gives the quantile function and runif generates random deviates.
+    Uniform: These functions provide information about the uniform distribution on the interval from min to max. 
+    dunif gives the density, punif gives the distribution function qunif gives the quantile function and runif generates random deviates.
+    "
+  })
   
   
   
